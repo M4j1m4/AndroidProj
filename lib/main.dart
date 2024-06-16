@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'api_service.dart'; // Ensure you import your service file
+import 'api_service.dart';
+import 'bot.dart';  // Import the bot.dart file
 
 void main() {
   runApp(const MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -33,12 +33,14 @@ class GradeViewerScreen extends StatefulWidget {
 }
 
 class _GradeViewerScreenState extends State<GradeViewerScreen> {
-  late Future<StudyPlan> futureStudyPlan;
+  late Future<StudyPlan> futureStudentData;
+  late Future<StudyPlan> futureKhenStudyPlan;
 
   @override
   void initState() {
     super.initState();
-    futureStudyPlan = ApiService().fetchStudyPlan();
+    futureStudentData = ApiService().fetchStudyPlan();
+    futureKhenStudyPlan = ApiService().fetchKhenStudyPlan();
   }
 
   @override
@@ -52,6 +54,15 @@ class _GradeViewerScreenState extends State<GradeViewerScreen> {
           IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.chat),  // Chat icon in app bar
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ChatScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -85,8 +96,10 @@ class _GradeViewerScreenState extends State<GradeViewerScreen> {
                 _buildMenuItem(Icons.school, 'STUDY'),
                 _buildMenuItem(Icons.schedule, 'SCHEDULE'),
                 _buildMenuItem(Icons.grade, 'GRADES'),
-                const Spacer(),
+                const SizedBox(height: 20),
                 _buildMenuItem(Icons.logout, 'LOGOUT'),
+                const SizedBox(height: 20),
+                _buildMenuItem(Icons.chat, 'CHATBOT'),  // Chatbot menu item
               ],
             ),
           ),
@@ -100,7 +113,14 @@ class _GradeViewerScreenState extends State<GradeViewerScreen> {
       children: [
         IconButton(
           icon: Icon(icon, color: Colors.white, size: 24),
-          onPressed: () {},
+          onPressed: () {
+            if (title == 'CHATBOT') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ChatScreen()),
+              );
+            }
+          },
         ),
         Text(
           title,
@@ -138,41 +158,55 @@ class _GradeViewerScreenState extends State<GradeViewerScreen> {
               ],
             ),
           ),
-        Expanded(
-          child: Center(
-            child: FutureBuilder<StudyPlan>(
-              future: futureStudyPlan,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else if (snapshot.hasData) {
-                  final studyPlan = snapshot.data!;
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ListView.builder(
-                            itemCount: studyPlan.students.length,
-                            itemBuilder: (context, index) {
-                              final student = studyPlan.students[index];
-                              return Card(
-                                child: ListTile(
-                                  title: Text(student.name),
-                                  subtitle: Text('Age: ${student.age}, Year Level: ${student.yearLevel}'),
-                                ),
-                              );
-                            },
-                          )
-                  );
-                } else {
-                  return const Text('No study plan available');
-                }
-              },
+          Expanded(
+            child: ListView(
+              children: [
+                _buildFutureBuilder(futureStudentData, 'Student Data'),
+                _buildFutureBuilder(futureKhenStudyPlan, 'Khen Study Plan'),
+              ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFutureBuilder(Future<StudyPlan> future, String title) {
+    return FutureBuilder<StudyPlan>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (snapshot.hasData) {
+          final studyPlan = snapshot.data!;
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: studyPlan.students.length,
+                  itemBuilder: (context, index) {
+                    final student = studyPlan.students[index];
+                    return Card(
+                      child: ListTile(
+                        title: Text(student.name),
+                        subtitle: Text('Age: ${student.age}, Year Level: ${student.yearLevel}'),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        } else {
+          return const Center(child: Text('No study plan available'));
+        }
+      },
+    );
+  }
 }
