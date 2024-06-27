@@ -2,6 +2,7 @@ import 'package:androidproj/studyplan.dart';
 import 'package:flutter/material.dart';
 import 'bot.dart';
 import 'viewgrades.dart';
+import 'schedule.dart';
 
 void main() {
   runApp(const MyApp());
@@ -112,6 +113,11 @@ class HomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => GradeViewerScreen()),
+              );
+            } else if (title == 'SCHEDULE') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ScheduleScreen()),
               );
             }
           },
